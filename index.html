@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html>
+<title>GUN SHOP</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+<style>
+.zoom {
+  padding: 50px;
+  /*background-color: green;*/
+  transition: transform .15s; /* Animation */
+  width: 300px;
+  height: 300px;
+  margin: 0 auto;
+}
+
+.zoom:hover {
+  transform: scale(1.5); /* (150% zoom - Note: if the zoom is too large, it will go outside of the viewport) */
+}
+
+/** {box-sizing: border-box;}*/
+
+.container {
+  position: center;
+  width: 50%;
+  max-width: 300px;
+}
+
+.image_special {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.overlay {
+  position: center; 
+  /*bottom: 0; */
+  background: rgb(0, 0, 0);
+  background: rgba(0, 0, 0, 0.5); /* Black see-through */
+  color: #f1f1f1; 
+  width: 100%;
+  transition: .5s ease;
+  opacity:0;
+  color: white;
+  font-size: 20px;
+  padding: 20px;
+  text-align: center;
+}
+
+.container:hover .overlay {
+  opacity: 1;
+}
+</style>
+<head>
+	<script>
+		var user = null;
+		const baseurl = "http://localhost:8000/";
+		let row_entry = (a) => "<tr>" + a + "</tr>";
+		let tle_entry = (a) => "<th>" + a + "</th>";
+		let col_entry = (a) => "<td>" + a + "</td>";
+		let img_entry = (a) => "<img class=\"zoom\" src=\""+ a + "\">";
+		function buy_product(id) {
+			document.getElementById( "sort" ).style.display = "none"
+			getProduct(id)
+		}
+		function get_back() {
+			setUpShop()
+			document.getElementById( "sort" ).style.display = "block"
+		}
+		function draw_shop(shop_json) {
+			let out_button = (a) => "<input class=\"w3-btn w3-disabled w3-red\" type=\"button\" value=\""+ a +"\">";
+			let buy_button = (a) => "<input onclick=\"buy_product( "+ product.id +" )\" class=\"w3-btn w3-green\" type=\"button\" value=\""+ a +"\">";
+			var shop = "<table class=\"w3-table w3-bordered w3-centered w3-xlarge w3-serif\"";
+			shop += row_entry(tle_entry("Product")+
+			 					tle_entry("Details"));
+        	var jsonData = JSON.parse(shop_json)
+			for (var i = 0; i < jsonData.data.length; i++) {
+			    var product = jsonData.data[i];
+			    shop += "<tr>" + col_entry(product.manufacturer + " " + product.name);
+			    if (product.quantity < 1) {
+			    	shop+=col_entry(out_button("Get: " + product.price + ".00 $"));
+			    } else {
+			    	shop+=col_entry(buy_button("Get: " + product.price + ".00 $"));
+			    }
+			    shop+= "</tr>"
+				shop+= row_entry("<td rowspan=2>" + img_entry(product.image) + "</td>" +
+									col_entry("Quantity: " + product.quantity));
+				shop+= row_entry(col_entry("Cartridge: " + product.cartridge));
+			}
+			shop += "</table>";
+       		document.getElementById("shop").innerHTML = shop;
+		}
+		function getProduct(id) {
+			var button_id
+			var url = baseurl + "products/info=" + id
+		    var xmlHttp = new XMLHttpRequest();
+		
+		    xmlHttp.onreadystatechange = function() { 
+		        if (xmlHttp.readyState == 4 && xmlHttp.status == 200) {
+		        	var jsonData = JSON.parse(xmlHttp.responseText)
+		        	var product = jsonData.data
+		        	var shop = "<input onclick=\"get_back()\" class=\"w3-btn w3-green\" type=\"button\" value=\"Return To the shop\"><br>";
+		        	shop += "<div class=\"container\">\
+		        		<img width=50 class=image_special src=\""+ product.image + "\">  <div class=\"overlay\">" + product.manufacturer + " " +product.name + "</div> </div>"
+		        	shop += "<table class=\"w3-table w3-bordered w3-centered w3-xlarge w3-serif\"";
+		        	
+		        	shop+= row_entry(col_entry("Description: " + product.description) +
+		        		col_entry("Cartridge: " + product.cartridge) +
+		        		col_entry("<input class=\"w3-btn w3-green\" type=\"button\" value=\""+ "Get: " + product.price + ".00 $" +"\">"))
+		        	shop += "</table>";
+		        	document.getElementById("shop").innerHTML = shop;
+		        }
+		    }
+		    xmlHttp.open("GET", url, true);
+		    xmlHttp.send(null);
+		}
+		function setUpShop() {
+			var button_id
+			var url = baseurl + "products/"
+		    var xmlHttp = new XMLHttpRequest();
+		
+		    xmlHttp.onreadystatechange = function() { 
+		        if (xmlHttp.readyState == 4 && xmlHttp.status == 200) {
+	           		draw_shop(xmlHttp.responseText)
+		        }
+		    }
+		    xmlHttp.open("GET", url, true);
+		    xmlHttp.send(null);
+		}
+		function setUpShopSorted(sort_list) {
+			var url = baseurl + "products/sort=" + sort_list.options[sort_list.selectedIndex].value;
+		    var xmlHttp = new XMLHttpRequest();
+		
+		    xmlHttp.onreadystatechange = function() { 
+		        if (xmlHttp.readyState == 4 && xmlHttp.status == 200) {
+	           		draw_shop(xmlHttp.responseText)
+		        }
+		    }
+		    xmlHttp.open("GET", url, true);
+		    xmlHttp.send(null);
+		}
+		function checkUser(form) {
+			const FD = new FormData( form );
+		    var xmlHttp = new XMLHttpRequest();
+		    xmlHttp.onreadystatechange = function() { 
+		        if (xmlHttp.readyState == 4 && xmlHttp.status == 200) {
+		        	var jsonData = JSON.parse(xmlHttp.responseText)
+					if (jsonData.data) {
+							user = jsonData.data.id
+						 // form.style.display = "none"
+						 document.getElementById( "shop" ).style.display = "block"
+						 document.getElementById( "sort" ).style.display = "block"
+						 form.innerHTML = "Logged in as " + FD.get('username')
+					} else {
+						form.style.display = "none"
+						document.getElementById( "form-register" ).style.display = "block"
+					}
+		        }
+		    }
+		    xmlHttp.open("GET", baseurl + "users/username=" + FD.get('username') + "&password=" + FD.get('password'), true);
+		    xmlHttp.send(null);
+		}
+		function addUser(form) {
+			const FD = new FormData( form );
+		    var xmlHttp = new XMLHttpRequest();
+		    xmlHttp.onreadystatechange = function() { 
+		        if (xmlHttp.readyState == 4 && xmlHttp.status == 200) {
+		        	var jsonData = JSON.parse(xmlHttp.responseText)
+		        	if (jsonData.message == "success") {
+						 form.style.display = "none"
+						 document.getElementById( "form-signin" ).style.display = "block"
+					} else {
+						alert('This mail is in use');
+					}
+					form.innerHTML = xmlHttp.responseText
+		        }
+		    }
+   	 		const data = {username: FD.get('username'), password: FD.get('password'), email: FD.get('email')};
+		    xmlHttp.open("POST", baseurl + "users/", true);
+		    xmlHttp.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
+		    xmlHttp.send(JSON.stringify(data));
+		}
+		function addToCart(u_id, p_id) {
+		    var xmlHttp = new XMLHttpRequest();
+		    xmlHttp.onreadystatechange = function() { 
+		        if (xmlHttp.readyState == 4 && xmlHttp.status == 200) {
+		        	var jsonData = JSON.parse(xmlHttp.responseText)
+		        }
+		    }
+   	 		const data = {user_id: u_id, product_id: p_id}
+		    xmlHttp.open("POST", baseurl + "cart/", true);
+		    xmlHttp.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
+		    xmlHttp.send(JSON.stringify(data));
+		}
+		window.onload = function() {
+			document.getElementById( "form-signin" ).addEventListener( "submit", function ( event ) {
+				event.preventDefault();
+				checkUser(document.getElementById( "form-signin" ))
+			});
+
+			document.getElementById( "form-register" ).addEventListener( "submit", function ( event ) {
+				event.preventDefault();
+				addUser(document.getElementById( "form-register" ))
+			});
+
+			document.getElementById( "sort" ).addEventListener( "submit", function ( event ) {
+				event.preventDefault();
+				setUpShopSorted(document.getElementById( "sort_list" ));
+			});
+			setUpShop();
+		};
+	</script>
+</head>
+<body>
+
+	<h2>Gun Shop</h2>
+	
+	<table>
+		<tr>
+			<td>
+				<div id="credentials">
+					<form id="form-signin" > 
+					  <input class="form-control" type="text" required name="username" placeholder="Username">
+					  <input class="form-control" type="password" required name="password" placeholder="Password">
+					  <label class="checkbox"></label>
+					  <input class="btn btn-lg btn-primary btn-block" type="submit" value="Sign in!">
+					</form>
+					<form id="form-register" style="display:none;"> 
+					  <input class="form-control" type="text" required name="username" placeholder="Username">
+					  <input class="form-control" type="password" required name="password" placeholder="Password">
+					  <label class="checkbox"></label>
+					  <input class="form-control" type="text" required name="email" placeholder="Mail">
+					  <input class="btn btn-lg btn-primary btn-block" type="submit" value="Register">
+					</form>
+				</div>
+			</td>
+			<td>
+				<form id="sort" style="display:none;">
+					<select name="sort_by" id="sort_list" >
+					    <option value="1" selected>Id</option>
+					    <option value="2">Manufacturer</option>
+					    <option value="3">Model</option>
+					    <option value="4">Price</option>
+					    <option value="5">Quantity</option>
+					    <option value="6">Cartridge</option>
+					</select>
+					<input class="btn btn-lg btn-primary btn-block" type="submit" value="Sort">
+				</form>
+			</td>
+		</tr>
+	<table>
+	
+	<div id="shop" style="display:none;"> </div>
+</body>
+</html>
